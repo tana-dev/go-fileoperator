@@ -21,6 +21,8 @@ go-filesplitter
 $ go test ./...
 ```
 
+## curl
+curl -X POST -F file=@/fullpath/filename http://localhost:1323/api/fileupload --noproxy localhost
 
 ## Considerations
 
