@@ -1,12 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/labstack/echo/v4"
+)
+
+var (
+	line int = 0
 )
 
 func main() {
@@ -17,6 +22,7 @@ func main() {
 
 func fileupload(c echo.Context) error {
 
+	// ファイルをアップロード
 	file, err := c.FormFile("file")
 	if err != nil {
 		return err
@@ -36,6 +42,24 @@ func fileupload(c echo.Context) error {
 	defer dst.Close()
 
 	if _, err = io.Copy(dst, src); err != nil {
+		return err
+	}
+
+	//  読み込むファイルを開く
+	f, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	//  スキャナライブラリを作成
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line++
+	}
+
+	//  エラーが有ったかチェック
+	if err = scanner.Err(); err != nil {
 		return err
 	}
 
