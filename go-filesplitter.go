@@ -86,14 +86,15 @@ func fileupload(c echo.Context) error {
 	defer newfp.Close()
 
 	// 書き込み
-	scanner := bufio.NewScanner(fp)
-	for scanner.Scan() {
-		newfp.WriteString(scanner.Text())
-	}
-
-	// 書き込み
-	if err = scanner.Err(); err != nil {
-		return err
+	r := bufio.NewReader(fp)
+	for {
+		line, err := r.ReadString('\n')
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+		newfp.WriteString(line)
 	}
 
 	return c.JSON(http.StatusOK, "file has uploaded")
