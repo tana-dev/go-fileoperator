@@ -21,7 +21,18 @@
 			<br><br><br>
 			<h1>Splitter</h1>
 			<div id="app">
-				<input @change="selectedFile" type="file" name="file">
+				<div class="form-group row">
+					<label for="file">ファイル</label>
+					<div class="col-md-8">
+						<input @change="selectedFile" type="file" name="file">
+					</div>
+				</div>
+				<div class="form-group row">
+					<label for="inputSplitNumber">分割数</label>
+					<div class="col-md-8">
+						<input @change="inputSplitNumber" type="input" name="splitNumber">
+					</div>
+				</div>
 				<button @click="upload" type="submit" class="btn btn-primary">アップロード</button>
 			</div>
 		</div>
