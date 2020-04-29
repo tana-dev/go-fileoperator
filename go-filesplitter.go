@@ -3,25 +3,31 @@ package main
 import (
 	"bufio"
 	"bytes"
+	crand "crypto/rand"
+	"encoding/base32"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
+//	"github.com/labstack/echo/middleware"
 )
 
 var (
-	line        int = 0
-	splitNumber int = 0
-	fileLines   int = 0
+	splitLine int = 0
+	splitFile int = 0
+	fileLines int = 0
+	sessionID string
 )
 
 func main() {
 	e := echo.New()
+//	e.Use(middleware.Logger())
+//	e.Use(middleware.Recover())
 	e.POST("/api/fileupload", fileupload)
 	e.Logger.Fatal(e.Start(":1323"))
 }
@@ -29,11 +35,18 @@ func main() {
 func fileupload(c echo.Context) error {
 
 	s := c.QueryParam("splitNumber")
-	splitNumber, _ = strconv.Atoi(s)
+	splitFile, _ = strconv.Atoi(s)
+	sessionID, err := getSessionID()
+	if err != nil {
+		return err
+	}
 
-	//
-	// file upload
-	//
+	targetDir := filepath.Join("tmp", sessionID)
+	if err := os.Mkdir(targetDir, 0777); err != nil {
+		return err
+	}
+	defer os.RemoveAll(targetDir)
+
 	file, err := c.FormFile("file")
 	if err != nil {
 		return err
@@ -45,7 +58,7 @@ func fileupload(c echo.Context) error {
 	}
 	defer src.Close()
 
-	filename := filepath.Join("tmp", file.Filename)
+	filename := filepath.Join("tmp", sessionID, file.Filename)
 	dst, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -56,48 +69,24 @@ func fileupload(c echo.Context) error {
 		return err
 	}
 
-	//
-	line, err := countLine(filename)
+	fileLines, err := countLine(filename)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(line)
-
-	//
-	//	fileLines = line / splitNumber
-	//	remainderLines = line % splitNumber
-
-	//
-	// 既存ファイルオープン
-	//
-	fp, err := os.Open(filename)
+	splitLine = fileLines / splitFile
+	splitFiles, err := splitRowFile(filename)
 	if err != nil {
 		return err
 	}
-	defer fp.Close()
 
-	// 新規ファイルオープン
-	newfile := filepath.Join("tmp", "hello.txt")
-	newfp, err := os.OpenFile(newfile, os.O_RDWR|os.O_CREATE, 0664)
-	if err != nil {
-		return err
-	}
-	defer newfp.Close()
+	fmt.Println("fileLines:" + strconv.Itoa(fileLines))
+	fmt.Println("splitFile:" + strconv.Itoa(splitFile))
+	fmt.Println("splitLine:" + strconv.Itoa(splitLine))
+	fmt.Println("splitFiles:" + splitFiles[0])
+	fmt.Println("sessionID:" + sessionID)
 
-	// 書き込み
-	r := bufio.NewReader(fp)
-	for {
-		line, err := r.ReadString('\n')
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-		newfp.WriteString(line)
-	}
-
-	return c.JSON(http.StatusOK, "file has uploaded")
+	return c.File(splitFiles[0])
 }
 
 func countLine(file string) (int, error) {
@@ -115,4 +104,63 @@ func countLine(file string) (int, error) {
 	line = bytes.Count(b, []byte{'\n'})
 
 	return line, err
+}
+
+func splitRowFile(filename string) ([]string, error) {
+
+	var l int = 1
+	var fileNumber int = 0
+	var newFiles []string
+
+	newFilesOpener := []*os.File{}
+	for i := 1; i <= splitFile; i++ {
+		newfile := filename + "." + strconv.Itoa(i)
+		newfp, err := os.OpenFile(newfile, os.O_RDWR|os.O_CREATE, 0664)
+		if err != nil {
+			return newFiles, err
+		}
+		defer newfp.Close()
+		newFilesOpener = append(newFilesOpener, newfp)
+		newFiles = append(newFiles, newfile)
+	}
+
+	fp, err := os.Open(filename)
+	if err != nil {
+		return newFiles, err
+	}
+	defer fp.Close()
+
+	r := bufio.NewReader(fp)
+	for {
+
+		if l == splitLine && fileNumber != splitFile-1 {
+			fileNumber++
+			l = 1
+		}
+
+		line, err := r.ReadString('\n')
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return newFiles, err
+		}
+
+		newFilesOpener[fileNumber].WriteString(line)
+
+		l++
+	}
+
+	return newFiles, err
+}
+
+func getSessionID() (string, error) {
+
+	b := make([]byte, 32)
+	_, err := io.ReadFull(crand.Reader, b)
+	if err != nil {
+		return "", err
+	}
+	id := strings.TrimRight(base32.StdEncoding.EncodeToString(b), "=")
+
+	return id, nil
 }
