@@ -24,7 +24,7 @@
 					}
 				};
 				axios
-					.post('http://localhost:1323/api/fileupload?splitNumber=' + this.splitNumber, formData, config)
+					.post('http://localhost:1323/api/v1/filesplit?splitNumber=' + this.splitNumber, formData, config)
 					.then(function(response) {
 						const url = window.URL.createObjectURL(new Blob([response.data]));
 						const link = document.createElement('a');
