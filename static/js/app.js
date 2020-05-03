@@ -19,14 +19,19 @@
 				formData.append('file', this.uploadFile);
 				let config = {
 					headers: {
-						'content-type': 'multipart/form-data'
+						'content-type': 'multipart/form-data',
+						'responseType': 'blob'
 					}
 				};
 				axios
 					.post('http://localhost:1323/api/fileupload?splitNumber=' + this.splitNumber, formData, config)
 					.then(function(response) {
-						// response 処理
-						console.log("sucess");
+						const url = window.URL.createObjectURL(new Blob([response.data]));
+						const link = document.createElement('a');
+						link.href = url;
+						link.setAttribute('download', 'file.tsv');
+						document.body.appendChild(link);
+						link.click();
 					})
 					.catch(function(error) {
 						console.log("error");

@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
-//	"github.com/labstack/echo/middleware"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 var (
@@ -26,8 +26,8 @@ var (
 
 func main() {
 	e := echo.New()
-//	e.Use(middleware.Logger())
-//	e.Use(middleware.Recover())
+	e.Use(middleware.Logger())
+	e.Use(middleware.CORS())
 	e.POST("/api/fileupload", fileupload)
 	e.Logger.Fatal(e.Start(":1323"))
 }
@@ -86,7 +86,14 @@ func fileupload(c echo.Context) error {
 	fmt.Println("splitFiles:" + splitFiles[0])
 	fmt.Println("sessionID:" + sessionID)
 
-	return c.File(splitFiles[0])
+	w := c.Response()
+	out := readfile(splitFiles[0])
+	w.Header().Set("Content-Disposition", "attachment; filename=test.tsv.1")
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Access-Control-Allow-Origin", "*") // これだとセキュリティがゆるくなる。公開API以外NG
+	w.Write(out)
+
+	return nil
 }
 
 func countLine(file string) (int, error) {
@@ -163,4 +170,19 @@ func getSessionID() (string, error) {
 	id := strings.TrimRight(base32.StdEncoding.EncodeToString(b), "=")
 
 	return id, nil
+}
+
+
+
+func readfile(srcpath string) []byte {
+
+	src, err := os.Open(srcpath)
+	if err != nil {
+		panic(err)
+	}
+	defer src.Close()
+
+	contents, _ := ioutil.ReadAll(src)
+
+	return contents
 }
