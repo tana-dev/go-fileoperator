@@ -1,11 +1,11 @@
-package api
+package handler
 
 import (
+	"archive/zip"
 	"bufio"
 	"bytes"
 	crand "crypto/rand"
 	"encoding/base32"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -71,17 +71,18 @@ func PostFilesplit(c echo.Context) error {
 		return err
 	}
 
-	fmt.Println("fileLines:" + strconv.Itoa(fileLines))
-	fmt.Println("splitFile:" + strconv.Itoa(splitFile))
-	fmt.Println("splitLine:" + strconv.Itoa(splitLine))
-	fmt.Println("splitFiles:" + splitFiles[0])
-	fmt.Println("sessionID:" + sessionID)
-
 	w := c.Response()
-	out := readfile(splitFiles[0])
+	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", "attachment; filename=split.zip")
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write(out)
+
+	zipWriter := zip.NewWriter(w)
+	defer zipWriter.Close()
+
+	for _, s := range splitFiles {
+		if err := addToZip(s, zipWriter); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -173,4 +174,24 @@ func readfile(srcpath string) []byte {
 	contents, _ := ioutil.ReadAll(src)
 
 	return contents
+}
+
+func addToZip(filename string, zipWriter *zip.Writer) error {
+	src, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	writer, err := zipWriter.Create(filepath.Base(filename))
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(writer, src)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

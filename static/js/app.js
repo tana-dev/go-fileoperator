@@ -18,9 +18,10 @@
 				let formData = new FormData();
 				formData.append('file', this.uploadFile);
 				let config = {
+					responseType: 'blob',
 					headers: {
 						'content-type': 'multipart/form-data',
-						'responseType': 'blob'
+						Accept: 'application/zip'
 					}
 				};
 				axios
@@ -29,7 +30,7 @@
 						const url = window.URL.createObjectURL(new Blob([response.data]));
 						const link = document.createElement('a');
 						link.href = url;
-						link.setAttribute('download', 'file.tsv');
+						link.setAttribute('download', 'split.zip');
 						document.body.appendChild(link);
 						link.click();
 					})
