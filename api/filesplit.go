@@ -32,8 +32,7 @@ func PostFilesplit(c echo.Context) error {
 		return err
 	}
 
-	targetDir := filepath.Join("tmp", sessionID)
-	if err := os.Mkdir(targetDir, 0777); err != nil {
+	if err := os.Mkdir(sessionID, 0777); err != nil {
 		return err
 	}
 	defer os.RemoveAll(targetDir)
@@ -49,7 +48,7 @@ func PostFilesplit(c echo.Context) error {
 	}
 	defer src.Close()
 
-	filename := filepath.Join("tmp", sessionID, file.Filename)
+	filename := filepath.Join(sessionID, file.Filename)
 	dst, err := os.Create(filename)
 	if err != nil {
 		return err
