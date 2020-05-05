@@ -20,19 +20,18 @@ var (
 	splitLine int = 0
 	splitFile int = 0
 	fileLines int = 0
-	sessionID string
 )
 
 func PostFilesplit(c echo.Context) error {
 
 	s := c.QueryParam("splitNumber")
 	splitFile, _ = strconv.Atoi(s)
-	sessionID, err := getSessionID()
+	targetDir, err := getSessionID()
 	if err != nil {
 		return err
 	}
 
-	if err := os.Mkdir(sessionID, 0777); err != nil {
+	if err := os.Mkdir(targetDir, 0777); err != nil {
 		return err
 	}
 	defer os.RemoveAll(targetDir)
@@ -48,7 +47,7 @@ func PostFilesplit(c echo.Context) error {
 	}
 	defer src.Close()
 
-	filename := filepath.Join(sessionID, file.Filename)
+	filename := filepath.Join(targetDir, file.Filename)
 	dst, err := os.Create(filename)
 	if err != nil {
 		return err
