@@ -24,11 +24,16 @@ test:
 	goimports -w ./
 	go test ./...
 
+# Clean
+.PHONY: clean
+clean:
+	-rm -rdf ./statik
+
 # Build
 ## statik
 .PHONY: statik
 statik:
-	rm -rdf ./statik
+	-rm -rdf ./statik
 	statik -src static
 
 ## build-linux
@@ -48,4 +53,4 @@ build-macos:
 
 ## all build
 .PHONY: build
-build: statik build-linux build-windows build-macos
+build: statik build-linux build-windows build-macos clean
