@@ -25,6 +25,12 @@ test:
 	go test ./...
 
 # Build
+## statik
+.PHONY: statik
+statik:
+	rm -rdf ./statik
+	statik -src static
+
 ## build-linux
 .PHONY: build-linux
 build-linux:
@@ -42,4 +48,4 @@ build-macos:
 
 ## all build
 .PHONY: build
-build: build-linux build-windows build-macos
+build: statik build-linux build-windows build-macos
