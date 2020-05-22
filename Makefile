@@ -20,7 +20,7 @@ lint:
 
 ## test
 .PHONY: test
-test:
+test: statik
 	goimports -w ./
 	go test ./...
 
